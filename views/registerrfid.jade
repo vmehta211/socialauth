@@ -1,0 +1,40 @@
+extends layout
+
+block content
+  #page-content-wrapper
+    .page-content.inset
+      .row
+        a#menu-toggle.btn.btn-default(href='#')
+          i.fa.fa-bars
+        .col-md-12
+          h1 Hadley Media's TwitterWall
+          p Configure RFID wristband
+          div#rfid_box  
+            p.rfid_message Place your wristband over the reader and wait.
+            
+          br
+          br
+          br
+          p#link_to_social(style='display: none') Authenticate with your favorite social networks
+            br
+            a#linktofb(href="/auth/facebook")
+                img.logo(src="images/facebook.png")
+            a#linktotwit(href="/auth/twitter")
+                img.logo(src="images/twitter.png")
+            br
+            a#completeSocialize(href="/completesocialize") Completed Linking   
+
+  div#debug 
+    span Debug Message: 
+    input#outgoingChatMessage
+    br
+    ul#incomingChatMessages
+    
+  script.
+    $("#menu-toggle").click(function(e) {
+      e.preventDefault();
+      $("#wrapper").toggleClass("active");
+    });
+
+
+

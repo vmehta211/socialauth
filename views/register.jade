@@ -1,0 +1,32 @@
+extends layout
+
+block content
+  #page-content-wrapper
+    .page-content.inset
+      .row
+        a#menu-toggle.btn.btn-default(href='#')
+          i.fa.fa-bars
+        .col-md-12
+          h1 Hadley Media's TwitterWall
+          p 
+          |This app will allow you to register a wristband with your favorite social
+          br  
+          |networking sites. To associate your wristband please click "register wristband" 
+          br
+          |then place it on the reader.
+          br
+          a(href="/registerrfid") register wristband
+  div#debug 
+    span Debug Message: 
+    input#outgoingChatMessage
+    br
+    ul#incomingChatMessages
+    
+  script.
+    $("#menu-toggle").click(function(e) {
+      e.preventDefault();
+      $("#wrapper").toggleClass("active");
+    });
+
+
+

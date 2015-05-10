@@ -1,0 +1,28 @@
+extends layout
+
+block content
+  #page-content-wrapper
+    .page-content.inset
+      .row
+        a#menu-toggle.btn.btn-default(href='#')
+          i.fa.fa-bars
+        .col-md-12
+          h1 Take a Picture 
+        
+          br
+          h4 Socializing Complete
+          p Go take a picture!
+  div#debug 
+    span Debug Message: 
+    input#outgoingChatMessage
+    br
+    ul#incomingChatMessages
+    
+  script.
+    $("#menu-toggle").click(function(e) {
+      e.preventDefault();
+      $("#wrapper").toggleClass("active");
+    });
+
+
+
