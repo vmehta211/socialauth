@@ -4,6 +4,9 @@ var ids = {
 // clientSecret: '41083d8bcc6fe21b575c587b98245276',
 // callbackURL: 'http://11.0.0.1:3000/auth/facebook/callback'
 //},
+    app:{
+      socialposter:'socialposter.appledecay.com'
+    },
 facebook: {
  clientID: '695175153862991',
  clientSecret: 'ec1299c3153c41a294bf294658dc8484',

@@ -4,34 +4,23 @@ var OAuth= require('oauth').OAuth;
 var config = require('../oauth.js')
 var util = require('util');
 var Twitter = require('node-twitter');
-var mysql = require('mysql');
+
 var http = require('http');
 var https = require('https');
 
 var twitter = require('twitter');
 
-var connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'Hamburger123!',
-});
-connection.connect(function(err) {
-    // connected! (unless `err` is set)
-    if (err) {
-        console.log('mysql error: ', err);
-        return false;
-    }
-});
+
 
 exports.registerrfid = function(req, res) {
     //req.session.testShit = 'this is a value';
-    res.render('registerrfid', {title: "Take a Picture - reged"});
+    res.render('registerrfid', {title: "Hadley Media's TwitterWall - register"});
 };
 
 exports.register = function(req, res) {
     //req.session.newKeyViral = 'mehta';
     req.session.name = "this be da session name";
-    res.render('register', {title: "Take a Picture - start"});
+    res.render('register', {title: "Hadley Media's TwitterWall - start"});
 };
 exports.ping = function(req, res) {
     res.send("pong!", 200);
