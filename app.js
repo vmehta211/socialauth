@@ -24,7 +24,6 @@ var express = require('express')
     });
 
 
-var config = require('./oauth.js')
 var fs = require('fs');
 var routes = require('./routes');
 var path = require('path');
@@ -34,6 +33,16 @@ var sys = require('sys')
 var exec = require('child_process').exec;
 var Tail = require('tail').Tail;
 var http = require('http');
+
+var config;
+if(fs.existsSync('/var/secure/twitterwall/config.js')){
+    console.log('found config file in /var/secure');
+    config = require('/var/secure/twitterwall/config.js');
+}
+else{
+    config = require('./config.js')
+}
+
 var listenToRfid = false;
 
 
@@ -46,7 +55,6 @@ console.log('about to call listen');
 server.listen(port, function () {
     console.log(magenta + 'server started and listening on port ' + port + reset);
     //io = require('socket.io').listen(server);
-
 });
 
 

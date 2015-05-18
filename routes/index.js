@@ -1,7 +1,7 @@
 var path = require("path");
 var fs = require('fs');
 var OAuth= require('oauth').OAuth;
-var config = require('../oauth.js')
+var config = require('../config.js')
 var util = require('util');
 var Twitter = require('node-twitter');
 
