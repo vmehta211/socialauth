@@ -33,17 +33,18 @@ var sys = require('sys')
 var exec = require('child_process').exec;
 var Tail = require('tail').Tail;
 var http = require('http');
+var md5 = require('MD5');
 
 var config;
-if(fs.existsSync('/var/secure/twitterwall/config.js')){
+if (fs.existsSync('/var/secure/twitterwall/config.js')) {
     console.log('found config file in /var/secure');
     config = require('/var/secure/twitterwall/config.js');
 }
-else{
+else {
     config = require('./config.js')
 }
 
-var listenToRfid = false;
+var listenToRfid = true;
 
 
 //postRegistrationData(123,{this:'is',a:'test'});
@@ -66,12 +67,18 @@ var nfc_eventdInt = setInterval(function () {
         tail.on("line", function (data) {
             console.log(data);
 
-            if (data.search('SNlen=4 SN=') !== -1) {
+            if (data.search('SNlen=4 SN=') !== -1 && listenToRfid) {
                 console.log('detected rfid');
-                //rfid = data.substring(data.lastIndexOf("=") + 1, data.lastIndexOf(")"));
+                listenToRfid = false;
+
+                //wait 5s before listening for rfid input
+                setTimeout(function () {
+                    listenToRfid = true;
+                }, 5000);
+
+
                 rfid = data.substring(data.lastIndexOf("=") + 2, data.lastIndexOf("]"));
                 rfid = parseInt('0x' + rfid)
-                //io.sockets.emit('nfcevent', rfid);
                 currentRfid = rfid;
 
                 var packet = {
@@ -82,8 +89,6 @@ var nfc_eventdInt = setInterval(function () {
                 }
 
                 io.sockets.emit('nfcevent', packet);
-                //              });
-
             }
             //console.log(data);
         });
@@ -287,14 +292,6 @@ io.sockets.on('connection', function (socket) {
 
     console.log("Establishing new connection", session);
 
-    //socket.on('unlinkSocial', function(data) {
-    //    var type = data.type;
-    //    var rfid = data.rfid;
-    //    console.log('client has requested to be unlinked from ', type);
-    //
-    //    unlinkSocial(rfid, type);
-    //
-    //});
 
     socket.on('message', function (msg) {
         console.log('Message Received: ', msg);
@@ -325,9 +322,8 @@ io.sockets.on('connection', function (socket) {
 });
 
 
-
 console.log('starting rfid reader');
-exec('/home/pi/scripts/startRC522 2>&1 >> /tmp/rfid_RC522.log', function(e) {
+exec('/home/pi/scripts/startRC522 2>&1 >> /tmp/rfid_RC522.log', function (e) {
     console.log(e);
 });
 
@@ -341,16 +337,18 @@ function postRegistrationData(rfid, data) {
         'Content-Length': dataString.length
     };
 
+    var apiPath = '/register/' + rfid + '/' + Date.now() + '/';
+    var sig = md5(apiPath + config.app.apikey);
+
     var options = {
         host: config.app.socialposter,
         port: 80,
-        path: '/register/' + rfid + '/' + Date.now() + '/signature',
+        path: apiPath + sig,
         method: 'POST',
         headers: headers
     };
 
     console.log('going to make request with ', options, dataString);
-
 
 // Setup the request.  The options parameter is
 // the object we defined above.
