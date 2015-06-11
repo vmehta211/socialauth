@@ -33,18 +33,17 @@ var sys = require('sys')
 var exec = require('child_process').exec;
 var Tail = require('tail').Tail;
 var http = require('http');
-var md5 = require('MD5');
 
 var config;
-if (fs.existsSync('/var/secure/twitterwall/config.js')) {
+if(fs.existsSync('/var/secure/twitterwall/config.js')){
     console.log('found config file in /var/secure');
     config = require('/var/secure/twitterwall/config.js');
 }
-else {
+else{
     config = require('./config.js')
 }
 
-var listenToRfid = true;
+var listenToRfid = false;
 
 
 //postRegistrationData(123,{this:'is',a:'test'});
@@ -67,18 +66,12 @@ var nfc_eventdInt = setInterval(function () {
         tail.on("line", function (data) {
             console.log(data);
 
-            if (data.search('SNlen=4 SN=') !== -1 && listenToRfid) {
+            if (data.search('SNlen=[0-9]+ SN=') !== -1) {
                 console.log('detected rfid');
-                listenToRfid = false;
-
-                //wait 5s before listening for rfid input
-                setTimeout(function () {
-                    listenToRfid = true;
-                }, 5000);
-
-
+                //rfid = data.substring(data.lastIndexOf("=") + 1, data.lastIndexOf(")"));
                 rfid = data.substring(data.lastIndexOf("=") + 2, data.lastIndexOf("]"));
                 rfid = parseInt('0x' + rfid)
+                //io.sockets.emit('nfcevent', rfid);
                 currentRfid = rfid;
 
                 var packet = {
@@ -89,6 +82,8 @@ var nfc_eventdInt = setInterval(function () {
                 }
 
                 io.sockets.emit('nfcevent', packet);
+                //              });
+
             }
             //console.log(data);
         });
@@ -116,9 +111,10 @@ passport.use(new FacebookStrategy({
         clientID: config.facebook.clientID,
         clientSecret: config.facebook.clientSecret,
         callbackURL: config.facebook.callbackURL,
-        profileFields: ['id', 'displayName', 'photos']
+        profileFields: ['id', 'displayName', 'photos'],
+        passReqToCallback: true
     },
-    function (accessToken, refreshToken, profile, done) {
+    function (req, accessToken, refreshToken, profile, done) {
         console.log('accessToken ', accessToken, ' profile ', profile);
 
 //    var sql = "UPDATE picture_taker.config SET fb_authtoken='" +
@@ -133,6 +129,9 @@ passport.use(new FacebookStrategy({
         //
         //connection.query(sql, {facebook_data: fbdata})
 
+	    req.session.facebook = {};
+	    req.session.facebook.accessToken = accessToken;
+	    req.session.facebook.profile = profile;
 
         process.nextTick(function () {
             return done(null, profile);
@@ -161,8 +160,8 @@ passport.use(new TwitterStrategy({
 
 
 app.configure(function () {
-    app.set('views', __dirname + '/views');
-    app.set('view engine', 'jade');
+//    app.set('views', __dirname + '/views');
+//    app.set('view engine', 'jade');
     app.use(function (req, res, next) {
         console.log('%s %s', req.method, req.url);
         next();
@@ -179,14 +178,24 @@ app.configure(function () {
     app.use(passport.session());
     app.use(app.router);
     app.use(express.static(__dirname + '/public'));
+    //app.use('/home/pi/public_html/socialauth/public');
 });
 
 
 // routes
-app.get('/', routes.register);
+app.get('/', function(req,res) {
+    res.send('<html><head><title>Social Registration</title><link rel="stylesheet" href="css/slimmain.css"/><link href=\'http://fonts.googleapis.com/css?family=Roboto:400,900,300\' rel=\'stylesheet\' type=\'text/css\'></head><body>    <div class="centerDiv">        <div class="childDiv">            <img class="topImage" src="images/hmtechLogo.png"/>            <div class="blockText">                <span class="huge">RFID SOCIAL</span> <span class="large">SHARE HUB</span><br/>                <span class="small">Step 1 - Assign RFID Tag</span>            </div>            <img class ="bottomImage" src="images/hadleyLogo.png"/>        </div>    </div></body>'
+        + '<script src="js/jquery.min.js"></script>'
+        + '<script src="js/slimmain.js"></script>'
+        + '<script src="/socket.io/socket.io.js"></script>'
+        + '</html>');
+});
+
+//app.get('/', routes.register);
 app.get('/registerrfid', function (req, res) {
     listenToRfid = true;
-    res.render('registerrfid', {title: "Hadley Media's TwitterWall"});
+//    res.render('registerrfid', {title: "Hadley Media's TwitterWall"});
+    res.render('registerrfid', {title: "Social Poster Registration"});
 });
 
 app.get('/ping', routes.ping);
@@ -292,6 +301,14 @@ io.sockets.on('connection', function (socket) {
 
     console.log("Establishing new connection", session);
 
+    //socket.on('unlinkSocial', function(data) {
+    //    var type = data.type;
+    //    var rfid = data.rfid;
+    //    console.log('client has requested to be unlinked from ', type);
+    //
+    //    unlinkSocial(rfid, type);
+    //
+    //});
 
     socket.on('message', function (msg) {
         console.log('Message Received: ', msg);
@@ -322,8 +339,9 @@ io.sockets.on('connection', function (socket) {
 });
 
 
+
 console.log('starting rfid reader');
-exec('/home/pi/scripts/startRC522 2>&1 >> /tmp/rfid_RC522.log', function (e) {
+exec('/home/pi/scripts/startRC522 2>&1 >> /tmp/rfid_RC522.log', function(e) {
     console.log(e);
 });
 
@@ -337,18 +355,16 @@ function postRegistrationData(rfid, data) {
         'Content-Length': dataString.length
     };
 
-    var apiPath = '/register/' + rfid + '/' + Date.now() + '/';
-    var sig = md5(apiPath + config.app.apikey);
-
     var options = {
         host: config.app.socialposter,
         port: 80,
-        path: apiPath + sig,
+        path: '/register/' + rfid + '/' + Date.now() + '/signature',
         method: 'POST',
         headers: headers
     };
 
     console.log('going to make request with ', options, dataString);
+
 
 // Setup the request.  The options parameter is
 // the object we defined above.
